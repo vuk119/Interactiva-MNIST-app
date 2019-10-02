@@ -194,26 +194,3 @@ class signal_processor:
         img = (img>0.5)*1
 
         return img
-
-class normalizer:
-    def normalize_signal(self,signal):
-        #Normalizes signal coordinates to be between 0 and 1
-
-        X=signal[:,1].astype(float)
-        Y=signal[:,0].astype(float)
-
-        norm=np.max([np.max(np.abs(X)),np.max(np.abs(Y))])
-        #norm=103
-        X=X/norm
-        Y=Y/norm
-
-        return np.vstack([Y,X,signal[:,2]]).T
-    def normalize_image(self,img):
-        #Set image to zeros and ones
-        img=img/np.max(np.max(img))
-        img = (img > 0.5)* 1
-
-        return img
-    def revert_image(self, img):
-        #Set zeros to ones and vice versa
-        return 1-img

@@ -1,12 +1,11 @@
 import tkinter as tk
 import matplotlib.pyplot as plt
 import numpy as np
-from utils import signal_processor, normalizer
+from utils import signal_processor
 from model import Model
 
-norm = normalizer()
 processor = signal_processor()
-m = Model(name = 'test',model_path = './test/model.h5')
+m = Model(name = 'test',model_path = './sample_model/model.h5')
 
 class GUI:
     """
@@ -53,6 +52,11 @@ class GUI:
 
 
         self.window.mainloop()
+
+    def show_image(self):
+
+        plt.imshow(self.img, cmap='gray')
+        plt.show()
 
     def draw(self,event, r=3):
         self.signal.append([event.x, event.y, 0])
