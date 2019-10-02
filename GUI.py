@@ -5,7 +5,7 @@ from utils import signal_processor
 from model import Model
 
 processor = signal_processor()
-m = Model(name = 'test',model_path = './sample_model/model.h5')
+m = Model(name = 'sample_model',model_path = './sample_model/model.h5')
 
 class GUI:
     """
