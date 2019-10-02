@@ -37,7 +37,7 @@ class Model():
         else:
             self.model = self.load_model(model_path)
 
-    def define_network(self, input_shape = (28,28)):
+    def define_network(self, input_shape = (28,28,1)):
         '''
         Uses keras to create a neural network
         '''
@@ -46,10 +46,13 @@ class Model():
         main_input = tf.keras.Input(shape = input_shape, name = 'main_input')
 
         #Network Body
-        x = tf.keras.layers.Flatten()(main_input)
-        x = tf.keras.layers.Dense(units = 100, activation = 'relu')(x)
-        x = tf.keras.layers.Dense(units = 100, activation = 'relu')(x)
-
+        x = tf.keras.layers.Conv2D(32, kernel_size = (3,3), activation = 'relu')(main_input)
+        x = tf.keras.layers.Conv2D(64, (3,3), activation='relu')(x)
+        x = tf.keras.layers.MaxPooling2D(pool_size=(2,2))(x)
+        x = tf.keras.layers.Dropout(0.25)(x)
+        x = tf.keras.layers.Flatten()(x)
+        x = tf.keras.layers.Dense(units = 128, activation = 'relu')(x)
+        x = tf.keras.layers.Dropout(0.5)(x)
         #Output
         output = tf.keras.layers.Dense(units = 10, activation = 'softmax')(x)
 
@@ -88,4 +91,4 @@ class Model():
         '''
 		Loads the model
 		'''
-        self.model=tf.keras.models.load_model(filename)
+        return tf.keras.models.load_model(filename)

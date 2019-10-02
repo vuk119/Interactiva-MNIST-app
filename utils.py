@@ -6,11 +6,12 @@ from scipy import interpolate
 from sklearn.utils import shuffle
 import pickle
 
+DIM = 28
 
 class signal_processor:
 
     def scale(self,example):
-        #Scales the coordinate system to 104 by 104
+        #Scales the coordinate system to 28 by 28
 
         X=example[:,1]
         Y=example[:,0]
@@ -21,8 +22,8 @@ class signal_processor:
 
         delta=np.max([np.max(np.abs(X)),np.max(np.abs(Y))])
         if delta != 0:
-            X=X.astype(float)/delta*103
-            Y=Y.astype(float)/delta*103
+            X=X.astype(float)/delta*(DIM-1)
+            Y=Y.astype(float)/delta*(DIM-1)
 
         example[:,1],example[:,0]=X,Y
 
@@ -36,7 +37,7 @@ class signal_processor:
         X=example[:,1]
         Y=example[:,0]
 
-        img=np.zeros((104,104))
+        img=np.zeros((DIM,DIM))
 
         for i in range(X.shape[0]):
             if example[i,2]==0:
@@ -46,34 +47,34 @@ class signal_processor:
     def fit_to_box(self,img):
         #The image is compressed so that it fits the smallest possible box
 
-        left,right,top,bot=104,0,104,0
+        left,right,top,bot=DIM,0,DIM,0
 
         #Find bounds on X
 
         #Left bound
-        for row in range(104):
-            for i in range(104):
+        for row in range(DIM):
+            for i in range(DIM):
                 if img[row,i]==1:
                     if i<left:
                         left=i
 
         #Right bound
-        for row in range(104):
-            for i in range(103,-1,-1):
+        for row in range(DIM):
+            for i in range(DIM-1,-1,-1):
                 if img[row,i]==1:
                     if i>right:
                         right=i
 
         #Left bound
-        for col in range(104):
-            for i in range(104):
+        for col in range(DIM):
+            for i in range(DIM):
                 if img[i,col]==1:
                     if i<top:
                         top=i
 
         #Right bound
-        for col in range(104):
-            for i in range(103,-1,-1):
+        for col in range(DIM):
+            for i in range(DIM-1,-1,-1):
                 if img[i,col]==1:
                     if i>bot:
                         bot=i
@@ -169,52 +170,31 @@ class signal_processor:
                                 new_img[x+dx,y+dy]=1
 
             return new_img
-    def get_image(self,signal,stretch=True):
+    def get_image(self,signal):
         signal=self.scale(signal)
+
+        #Get image of points in shape 28x28
         img=self.get_raw_image(signal)
-        img=self.fit_to_box(img)
+        #Connect points
         img=self.linear_interpolate(signal,img)
-        img=self.apply_mask(img,np.array([[0,1,0],[1,1,1],[0,1,0]]))
-        ratio=img.shape
+        #Apply mask
+        #img=self.apply_mask(img,np.array([[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]]))
+        img = self.apply_mask(img,np.array([[0,1,0],[1,1,1],[0,1,0]]))
+        #Remove unnecessary parts
+        img=self.fit_to_box(img)
 
-        if stretch:
-            img = cv2.resize(img, dsize=(104, 104))
+        #Padding image
+        height, width = img.shape
+        pad_h = (DIM - height) // 2 + 5
+        pad_w = (DIM - width) // 2 + 5
 
-        img[img>0.5]=1
-        img[img<=0.5]=0
+        img = np.pad(img, [(pad_h, pad_h), (pad_w, pad_w)], 'constant', constant_values = (0,0))
 
-        return img,ratio
-    def get_signal(self,signal,n_steps=100):
+        img = cv2.resize(img, (28,28))
+        img = (img>0.5)*1
 
-            length = signal.shape[0]
+        return img
 
-            xp = np.resize(np.arange(0, length, length/n_steps), n_steps)
-
-            xL = interpolate.interp1d(np.arange(length), signal[:,0], fill_value = 'extrapolate')
-            yL = interpolate.interp1d(np.arange(length), signal[:,1], fill_value = 'extrapolate')
-            cL = interpolate.interp1d(np.arange(length), signal[:,2], fill_value = 'extrapolate')
-
-            xResL = xL(xp)
-            yResL = yL(xp)
-
-            c = cL(xp)>0.5
-            c[-1] = 1
-
-            xResL, yResL, c = np.reshape(xResL,(n_steps,1)),np.reshape(yResL,(n_steps,1)),np.reshape(c,(n_steps,1))
-
-            new_signal=np.concatenate([xResL,yResL,c],axis=1)
-
-            return new_signal,length
-    def add_differences(self,signal):
-        X=example[:,1]
-        Y=example[:,0]
-
-        lengths=np.zeros((X.shape[0],1))
-
-        for i in range(1,X.shape[0]):
-            lengths[i]=np.power((X[i]-X[i-1])**2+(Y[i]-Y[i-1])**2,0.5)
-
-        return np.hstack((example,lengths))
 class normalizer:
     def normalize_signal(self,signal):
         #Normalizes signal coordinates to be between 0 and 1
@@ -231,13 +211,9 @@ class normalizer:
     def normalize_image(self,img):
         #Set image to zeros and ones
         img=img/np.max(np.max(img))
-        img[img>0.5]=1
-        img[img<=0.5]=0
+        img = (img > 0.5)* 1
 
         return img
     def revert_image(self, img):
         #Set zeros to ones and vice versa
         return 1-img
-    def normalize_ratio(self, ratio):
-        #Normalize ratio such that larger component is one
-        return ratio / np.max(ratio)
