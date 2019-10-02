@@ -8,6 +8,8 @@ scipy,
 opencv,
 tensorflow
 
+To run the app just run GUI.py.
+
 ## Features
 
 Currently the app is able to make a prediction, show what the input looks like and show top 3 predictions. 
